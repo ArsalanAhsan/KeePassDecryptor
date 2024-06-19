@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+
 public class PBKDF2Estimator {
 
     public static void main(String[] args) {
@@ -55,5 +58,22 @@ public class PBKDF2Estimator {
         if (transformRoundsOffset == -1) throw new IllegalArgumentException("Transform rounds not found");
         int transformRoundsLength = ByteBuffer.wrap(data, transformRoundsOffset + 1, 2).order(ByteOrder.LITTLE_ENDIAN).getShort();
         return ByteBuffer.wrap(data, transformRoundsOffset + 3, transformRoundsLength).order(ByteOrder.LITTLE_ENDIAN).getInt();
+    }
+    public static byte[] pbkdf2DeriveKey(String password, byte[] salt, int rounds) throws Exception {
+        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, rounds, 256);
+        SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+        return skf.generateSecret(spec).getEncoded();
+    }
+
+    public static int measurePBKDF2Speed(String password, byte[] salt) throws Exception {
+        int rounds = 1000;
+        long startTime = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - startTime < 1000) {
+            pbkdf2DeriveKey(password, salt, rounds);
+            rounds += 1000;
+        }
+
+        return rounds;
     }
 }
